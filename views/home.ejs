@@ -1,0 +1,95 @@
+<%- include("./partials/header.ejs") %>
+
+<div class="container">
+    <h3>Simple Calculator</h3>
+    <div id="result">0</div>
+    <div class="buttons-group">
+        <div class="button">(</div>
+        <div class="button">)</div>
+        <div class="button" id="backspace">&#x2190;</div>
+        <div class="button">AC</div>
+        <div class="button">7</div>
+        <div class="button">8</div>
+        <div class="button">9</div>
+        <div class="button">*</div>
+        <div class="button">4</div>
+        <div class="button">5</div>
+        <div class="button">6</div>
+        <div class="button">-</div>
+        <div class="button">1</div>
+        <div class="button">2</div>
+        <div class="button">3</div>
+        <div class="button">+</div>
+        <div class="button">0</div>
+        <div class="button">.</div>
+        <div class="button">=</div>
+        <div class="button">/</div>
+    </div>
+</div>
+
+<div id="results"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script type="text/javascript">
+    var socket = io();
+    var buttons = document.querySelectorAll(".button");
+    var result = document.querySelector("#result");
+    var results = document.querySelector("#results");
+    var vals = "";
+
+    (function() {
+        socket.on("result-display", function(obj) {
+            displayResults(obj);
+        }); 
+
+        buttons.forEach(function(button) {
+            button.addEventListener("click", function() {
+                switch(this.textContent) {
+                    case "AC": 
+                        result.textContent = 0;
+                        vals = "";
+                        break;
+                    case "=":
+                        if(!isNumeric(vals)) {
+                            var output = vals;
+                            vals = "" + eval(vals);
+                            result.textContent = vals;
+                            socket.emit("result-signal", output + " = " + vals);
+                        }
+                        break;
+                    default:
+                        if(this.id === "backspace"){
+                            vals = vals.slice(0, -1);
+                        }else{
+                            vals += this.textContent;
+                        }
+                        result.textContent = vals;
+                }
+            })
+        });
+    })()
+
+    function isNumeric(num) {
+        return !isNaN(num);
+    }
+
+    // Not showing more than 10 results
+    function isFull() {
+        return results.children.length === 10;
+    }
+
+    function displayResults(output) { 
+        if(isFull()) {
+            removeOldResult();
+        }
+
+        results.insertAdjacentHTML("afterbegin", "<div>" + output + "</div>");
+    }
+
+    //remove the line at the end
+    function removeOldResult() {
+        results.removeChild(results.childNodes[results.children.length - 1]);
+    }
+    main();
+</script>
+<%- include("./partials/footer.ejs") %>
