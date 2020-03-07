@@ -37,10 +37,20 @@
     var results = document.querySelector("#results");
     var vals = "";
 
-    (function() {
+    (function() { 
+        var storedResults = localStorage.getItem("results");
+
+        // show the results from sessions if available
+        if(storedResults) {
+            var storedVals = JSON.parse(storedResults);
+            storedVals.forEach(function(output){
+                displayResults(output);
+            });
+        }
+
         socket.on("result-display", function(obj) {
             displayResults(obj);
-        }); 
+        });
 
         buttons.forEach(function(button) {
             button.addEventListener("click", function() {
@@ -54,7 +64,8 @@
                             var output = vals;
                             vals = "" + eval(vals);
                             result.textContent = vals;
-                            socket.emit("result-signal", output + " = " + vals);
+                            output += " = " + vals;
+                            socket.emit("result-signal", output);
                         }
                         break;
                     default:
@@ -80,10 +91,12 @@
 
     function displayResults(output) { 
         if(isFull()) {
-            removeOldResult();
+            removeOldResult(output);
         }
 
+        // insert the result and also update local storage (could be optimized)
         results.insertAdjacentHTML("afterbegin", "<div>" + output + "</div>");
+        updateLocalStorage();
     }
 
     //remove the line at the end
@@ -91,5 +104,12 @@
         results.removeChild(results.childNodes[results.children.length - 1]);
     }
 
+    function updateLocalStorage() {
+        var storage = [];
+        results.childNodes.forEach(function(child) {
+            storage.unshift(child.textContent);
+        });
+        localStorage.setItem("results", JSON.stringify(storage));
+    }
 </script>
 <%- include("./partials/footer.ejs") %>
